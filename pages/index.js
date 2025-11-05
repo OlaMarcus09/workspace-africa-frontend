@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Router from 'next/router';
+import Head from 'next/head';
+
+// Import our new shadcn components
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -8,7 +22,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Get the API URL from our environment variable
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const handleSubmit = async (e) => {
@@ -24,26 +37,20 @@ export default function LoginPage() {
       });
       
       const { access, refresh } = response.data;
-      
-      // Step 2: Store tokens in local storage
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
 
-      // Step 3: Check if the user is a Partner
-      // We must get the user's profile to check their 'user_type'
+      // Step 2: Check if the user is a Partner
       const profileResponse = await axios.get(`${API_URL}/api/users/me/`, {
         headers: { Authorization: `Bearer ${access}` }
       });
 
       if (profileResponse.data.user_type === 'PARTNER') {
-        // Success! Send them to the scanner dashboard
         Router.push('/dashboard');
       } else {
-        // Not a partner, log them out
         localStorage.clear();
         setError('You do not have a Partner account.');
       }
-
     } catch (err) {
       setError('Invalid email or password. Please try again.');
     } finally {
@@ -52,63 +59,55 @@ export default function LoginPage() {
   };
 
   return (
-    // This is the clean, minimalist "Raptor" style layout
-    <div className="flex items-center justify-center min-h-screen bg-neutral-50">
-      <div className="w-full max-w-sm p-8 bg-white shadow-lg rounded-2xl">
-        
-        {/* We'll add our logo here later */}
-        <h1 className="text-3xl font-bold text-center text-neutral-800">
-          Partner Portal
-        </h1>
-        <p className="mt-2 text-sm text-center text-neutral-500">
-          Sign in to your Workspace Africa account
-        </p>
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Head>
+        <title>Partner Portal | Workspace Africa</title>
+      </Head>
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          {/* We'll add our logo here later */}
+          <img 
+            src="https://res.cloudinary.com/dmqjicpcc/image/upload/v1760286253/WorkSpaceAfrica_bgyjhe.png" 
+            alt="Workspace Africa Logo"
+            className="w-20 h-20 mx-auto" // Added logo
+          />
+          <CardTitle className="text-2xl pt-4">Partner Portal</CardTitle>
+          <CardDescription>Sign in to your account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="ola@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            
+            {error && (
+              <p className="text-xs text-center text-red-600">{error}</p>
+            )}
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label htmlFor="email" className="text-sm font-medium text-neutral-700">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-neutral-800 bg-neutral-100 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="text-sm font-medium text-neutral-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-neutral-800 bg-neutral-100 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-
-          {error && (
-            <p className="text-xs text-center text-red-600">{error}</p>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              // This uses our "Deep Teal" color!
-              className="w-full px-4 py-3 font-bold text-white transition-all bg-teal-600 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50"
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </div>
-        </form>
-      </div>
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
