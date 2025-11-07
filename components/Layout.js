@@ -1,57 +1,73 @@
 import React from 'react';
 import Router from 'next/router';
 import Link from 'next/link';
-// We'll import icons later
-// import { QrCodeIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+// Import our new icons
+import { LayoutDashboard, ScanLine, LogOut } from 'lucide-react';
+
+const NavLink = ({ href, children, isActive, icon: Icon }) => (
+  <Link href={href} legacyBehavior>
+    <a
+      className={`
+        flex items-center px-4 py-3 text-sm font-medium rounded-lg
+        transition-colors
+        ${
+          isActive
+            ? 'bg-primary text-primary-foreground' // Our Deep Teal!
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        }
+      `}
+    >
+      <Icon className="w-5 h-5 mr-3" />
+      {children}
+    </a>
+  </Link>
+);
 
 export default function PartnerLayout({ children, activePage }) {
 
   const handleLogout = () => {
     localStorage.clear();
-    Router.push('/login');
+    Router.push('/'); // Go back to the login page
   };
 
-  const NavLink = ({ href, children, isActive }) => (
-    <Link href={href} legacyBehavior>
-      <a
-        className={`
-          flex items-center px-4 py-3 text-sm font-medium
-          ${
-            isActive
-              ? 'bg-teal-700 text-white'
-              : 'text-neutral-300 hover:bg-neutral-700 hover:text-white'
-          }
-        `}
-      >
-        {/* <Icon className="w-6 h-6 mr-3" /> */}
-        {children}
-      </a>
-    </Link>
-  );
-
   return (
-    <div className="flex h-screen bg-neutral-100">
-      {/* --- Sidebar (Raptor-style) --- */}
-      <div className="flex flex-col w-64 bg-neutral-800">
-        <div className="flex items-center justify-center h-20 shadow-md">
-          {/* We'll add our logo here */}
-          <h1 className="text-2xl font-bold text-white">Partner Portal</h1>
+    <div className="flex min-h-screen bg-neutral-50">
+      {/* --- Sidebar --- */}
+      <div className="flex flex-col w-64 bg-background border-r">
+        {/* Logo Header */}
+        <div className="flex items-center justify-center h-20 border-b">
+          <img 
+            src="https://res.cloudinary.com/dmqjicpcc/image/upload/v1760286253/WorkSpaceAfrica_bgyjhe.png" 
+            alt="Workspace Africa Logo"
+            className="h-10"
+          />
         </div>
         
-        <nav className="flex-1 mt-5">
-          <NavLink href="/dashboard" isActive={activePage === 'dashboard'}>
+        {/* Main Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          <NavLink 
+            href="/dashboard" 
+            isActive={activePage === 'dashboard'} 
+            icon={LayoutDashboard}
+          >
             Dashboard
           </NavLink>
-          <NavLink href="/scanner" isActive={activePage === 'scanner'}>
+          <NavLink 
+            href="/scanner" 
+            isActive={activePage === 'scanner'} 
+            icon={ScanLine}
+          >
             Scan Member
           </NavLink>
         </nav>
 
-        <div className="p-4">
+        {/* Footer / Logout Button */}
+        <div className="p-4 border-t">
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-3 text-sm font-medium text-left text-neutral-300 hover:bg-neutral-700 hover:text-white"
+            className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
           >
+            <LogOut className="w-5 h-5 mr-3" />
             Log Out
           </button>
         </div>

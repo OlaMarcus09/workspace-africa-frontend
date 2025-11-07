@@ -1,18 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Router from 'next/router';
+import Head from 'next/head';
 import PartnerLayout from '../components/Layout';
+// Import our shadcn Card components
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-// A "Raptor-style" card component
+// Re-styled StatCard using shadcn
 const StatCard = ({ title, value, loading }) => (
-  <div className="p-6 bg-white shadow-lg rounded-2xl">
-    <h3 className="text-sm font-medium text-neutral-500">{title}</h3>
-    {loading ? (
-      <div className="w-3/4 h-8 mt-2 bg-neutral-200 animate-pulse rounded-lg" />
-    ) : (
-      <p className="mt-1 text-4xl font-bold text-neutral-800">{value}</p>
-    )}
-  </div>
+  <Card>
+    <CardHeader>
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      {loading ? (
+        <div className="w-3/4 h-8 mt-1 bg-muted animate-pulse rounded-lg" />
+      ) : (
+        <p className="text-4xl font-bold text-foreground">{value}</p>
+      )}
+    </CardContent>
+  </Card>
 );
 
 export default function Dashboard() {
@@ -24,10 +38,7 @@ export default function Dashboard() {
     const fetchDashboard = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-          Router.push('/login');
-          return;
-        }
+        if (!token) { Router.push('/'); return; }
 
         const API_URL = process.env.NEXT_PUBLIC_API_URL;
         const response = await axios.get(`${API_URL}/api/partner/dashboard/`, {
@@ -37,9 +48,8 @@ export default function Dashboard() {
         setStats(response.data);
       } catch (err) {
         if (err.response && err.response.status === 401) {
-          // Token is expired or invalid
           localStorage.clear();
-          Router.push('/login');
+          Router.push('/');
         } else {
           setError('Could not load dashboard data.');
         }
@@ -53,7 +63,10 @@ export default function Dashboard() {
 
   return (
     <PartnerLayout activePage="dashboard">
-      <h1 className="text-3xl font-bold text-neutral-800">
+      <Head>
+        <title>Dashboard | Partner Portal</title>
+      </Head>
+      <h1 className="text-3xl font-bold text-foreground">
         Welcome, {stats?.space_name || 'Partner'}
       </h1>
 
@@ -76,7 +89,7 @@ export default function Dashboard() {
       </div>
 
       {error && (
-        <p className="mt-4 text-sm text-red-600">{error}</p>
+        <p className="mt-4 text-sm text-destructive">{error}</p>
       )}
 
     </PartnerLayout>
