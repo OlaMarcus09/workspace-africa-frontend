@@ -3,62 +3,53 @@ import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import PartnerLayout from '../components/Layout';
-// Import our shadcn Card components
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Users, BarChart, CircleDollarSign, CalendarCheck } from 'lucide-react';
 
-// Re-styled StatCard using shadcn
-const StatCard = ({ title, value, loading }) => (
+// Helper component for the stat cards
+const StatCard = ({ title, value, icon: Icon, description }) => (
   <Card>
-    <CardHeader>
-      <CardTitle className="text-sm font-medium text-muted-foreground">
-        {title}
-      </CardTitle>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      {loading ? (
-        <div className="w-3/4 h-8 mt-1 bg-muted animate-pulse rounded-lg" />
-      ) : (
-        <p className="text-4xl font-bold text-foreground">{value}</p>
-      )}
+      <div className="text-2xl font-bold">{value}</div>
+      <p className="text-xs text-muted-foreground">{description}</p>
     </CardContent>
   </Card>
 );
 
-export default function Dashboard() {
-  const [stats, setStats] = useState(null);
+export default function PartnerDashboard() {
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        if (!token) { Router.push('/'); return; }
+        if (!token) {
+          Router.push('/');
+          return;
+        }
 
         const API_URL = process.env.NEXT_PUBLIC_API_URL;
         const response = await axios.get(`${API_URL}/api/partner/dashboard/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         
-        setStats(response.data);
+        setData(response.data);
       } catch (err) {
         if (err.response && err.response.status === 401) {
           localStorage.clear();
           Router.push('/');
-        } else {
-          setError('Could not load dashboard data.');
         }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboard();
+    fetchData();
   }, []);
 
   return (
@@ -67,31 +58,52 @@ export default function Dashboard() {
         <title>Dashboard | Partner Portal</title>
       </Head>
       <h1 className="text-3xl font-bold text-foreground">
-        Welcome, {stats?.space_name || 'Partner'}
+        Welcome, {data?.space_name || 'Partner'}
       </h1>
-
-      <div className="grid grid-cols-1 gap-6 mt-8 md:grid-cols-3">
-        <StatCard
-          title="Current Members Checked-In"
-          value={stats?.current_members_checked_in}
-          loading={loading}
-        />
-        <StatCard
-          title="Total Monthly Check-ins"
-          value={stats?.monthly_checkins}
-          loading={loading}
-        />
-        <StatCard
-          title="Estimated Monthly Payout"
-          value={stats ? `₦${Number(stats.monthly_payout_ngn).toLocaleString()}` : 0}
-          loading={loading}
-        />
-      </div>
-
-      {error && (
-        <p className="mt-4 text-sm text-destructive">{error}</p>
+      
+      {loading ? (
+        <p className="mt-4 text-muted-foreground">Loading dashboard data...</p>
+      ) : data ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-8">
+          <StatCard
+            title="Today's Check-Ins"
+            value={data.current_members_checked_in}
+            description="Members currently at your space."
+            icon={Users}
+          />
+          <StatCard
+            title="Monthly Check-Ins"
+            value={data.monthly_checkins}
+            description="Total check-ins this month."
+            icon={CalendarCheck}
+          />
+          <StatCard
+            title="Est. Monthly Payout"
+            value={`₦${Number(data.monthly_payout_ngn).toLocaleString()}`}
+            description={`Based on ₦${Number(data.payout_per_checkin_ngn).toLocaleString()} / check-in`}
+            icon={CircleDollarSign}
+          />
+          <StatCard
+            title="Capacity (Placeholder)"
+            value="75%"
+            description="15 of 20 seats occupied."
+            icon={BarChart}
+          />
+        </div>
+      ) : (
+        <p className="mt-4 text-red-500">Could not load dashboard data.</p>
       )}
 
+      {/* Placeholder for charts */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Check-In Trends (Placeholder)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-64 flex items-center justify-center">
+          <p className="text-muted-foreground">[Chart will go here]</p>
+        </CardContent>
+      </Card>
+      
     </PartnerLayout>
   );
 }

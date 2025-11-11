@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
-
-// Import our new shadcn components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +27,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    let access = null;
+
     try {
       // Step 1: Call the /token/ endpoint (Login)
       const response = await axios.post(`${API_URL}/api/auth/token/`, {
@@ -36,11 +36,21 @@ export default function LoginPage() {
         password,
       });
       
-      const { access, refresh } = response.data;
+      access = response.data.access; // Get the token
       localStorage.setItem('accessToken', access);
-      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('refreshToken', response.data.refresh);
 
+    } catch (err) {
+      // This block catches "Invalid email or password"
+      console.error("Login error:", err);
+      setLoading(false);
+      setError('Invalid email or password. Please try again.');
+      return; // Stop here
+    }
+
+    try {
       // Step 2: Check if the user is a Partner
+      // We use the 'access' token we just got
       const profileResponse = await axios.get(`${API_URL}/api/users/me/`, {
         headers: { Authorization: `Bearer ${access}` }
       });
@@ -49,10 +59,12 @@ export default function LoginPage() {
         Router.push('/dashboard');
       } else {
         localStorage.clear();
-        setError('You do not have a Partner account.');
+        setError('You have a valid account, but you are not a Partner.');
       }
     } catch (err) {
-      setError('Invalid email or password. Please try again.');
+      // This block catches "Cold Start" or "Profile" errors
+      console.error("Profile check error:", err);
+      setError('Could not verify your profile. The server may be waking up. Please try again in 30 seconds.');
     } finally {
       setLoading(false);
     }
@@ -65,11 +77,10 @@ export default function LoginPage() {
       </Head>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          {/* We'll add our logo here later */}
           <img 
             src="https://res.cloudinary.com/dmqjicpcc/image/upload/v1760286253/WorkSpaceAfrica_bgyjhe.png" 
             alt="Workspace Africa Logo"
-            className="w-20 h-20 mx-auto" // Added logo
+            className="w-20 h-20 mx-auto"
           />
           <CardTitle className="text-2xl pt-4">Partner Portal</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
