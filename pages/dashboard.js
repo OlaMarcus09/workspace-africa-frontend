@@ -4,7 +4,7 @@ import Router from 'next/router';
 import Head from 'next/head';
 import PartnerLayout from '../components/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Users, BarChart, CircleDollarSign, CalendarCheck } from 'lucide-react';
+import { Users, BarChart, CircleDollarSign, CalendarCheck, Building } from 'lucide-react';
 
 // Helper component for the stat cards
 const StatCard = ({ title, value, icon: Icon, description }) => (
@@ -21,7 +21,9 @@ const StatCard = ({ title, value, icon: Icon, description }) => (
 );
 
 export default function PartnerDashboard() {
-  const [data, setData] = useState(null);
+  const [user, setUser] = useState(null);
+  const [space, setSpace] = useState(null);
+  const [checkIns, setCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,11 +36,40 @@ export default function PartnerDashboard() {
         }
 
         const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        const response = await axios.get(`${API_URL}/api/partner/dashboard/`, {
+        
+        // Get user profile
+        const userResponse = await axios.get(`${API_URL}/api/users/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         
-        setData(response.data);
+        setUser(userResponse.data);
+
+        // If user has a managed space, get space details
+        if (userResponse.data.managed_space) {
+          try {
+            const spaceResponse = await axios.get(`${API_URL}/api/spaces/${userResponse.data.managed_space}/`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            setSpace(spaceResponse.data);
+          } catch (spaceError) {
+            console.log('Space details not available');
+          }
+        }
+
+        // Try to get recent check-ins for this space
+        try {
+          const checkInsResponse = await axios.get(`${API_URL}/api/check-ins/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          // Filter check-ins for this partner's space
+          const spaceCheckIns = checkInsResponse.data.filter(
+            checkIn => checkIn.space === userResponse.data.managed_space
+          );
+          setCheckIns(spaceCheckIns);
+        } catch (checkInError) {
+          console.log('Check-ins endpoint not available');
+        }
+
       } catch (err) {
         if (err.response && err.response.status === 401) {
           localStorage.clear();
@@ -52,58 +83,107 @@ export default function PartnerDashboard() {
     fetchData();
   }, []);
 
+  // Calculate stats from available data
+  const todayCheckIns = checkIns.filter(checkIn => {
+    const today = new Date().toDateString();
+    const checkInDate = new Date(checkIn.timestamp).toDateString();
+    return today === checkInDate;
+  }).length;
+
+  const monthlyCheckIns = checkIns.filter(checkIn => {
+    const thisMonth = new Date().getMonth();
+    const checkInMonth = new Date(checkIn.timestamp).getMonth();
+    return thisMonth === checkInMonth;
+  }).length;
+
+  const estimatedPayout = monthlyCheckIns * (space?.payout_per_checkin_ngn || 1500);
+
   return (
     <PartnerLayout activePage="dashboard">
       <Head>
         <title>Dashboard | Partner Portal</title>
       </Head>
-      <h1 className="text-3xl font-bold text-foreground">
-        Welcome, {data?.space_name || 'Partner'}
-      </h1>
+      
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">
+            Welcome, {user?.username || 'Partner'}
+          </h1>
+          {space && (
+            <p className="text-muted-foreground mt-2 flex items-center gap-2">
+              <Building className="w-4 h-4" />
+              Managing: {space.name}
+            </p>
+          )}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}
+        </div>
+      </div>
       
       {loading ? (
         <p className="mt-4 text-muted-foreground">Loading dashboard data...</p>
-      ) : data ? (
+      ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-8">
           <StatCard
             title="Today's Check-Ins"
-            value={data.current_members_checked_in}
-            description="Members currently at your space."
+            value={todayCheckIns}
+            description="Members checked in today"
             icon={Users}
           />
           <StatCard
             title="Monthly Check-Ins"
-            value={data.monthly_checkins}
-            description="Total check-ins this month."
+            value={monthlyCheckIns}
+            description="Total check-ins this month"
             icon={CalendarCheck}
           />
           <StatCard
             title="Est. Monthly Payout"
-            value={`₦${Number(data.monthly_payout_ngn).toLocaleString()}`}
-            description={`Based on ₦${Number(data.payout_per_checkin_ngn).toLocaleString()} / check-in`}
+            value={`₦${estimatedPayout.toLocaleString()}`}
+            description={`Based on ₦${(space?.payout_per_checkin_ngn || 1500).toLocaleString()} / check-in`}
             icon={CircleDollarSign}
           />
           <StatCard
-            title="Capacity (Placeholder)"
-            value="75%"
-            description="15 of 20 seats occupied."
+            title="Space Status"
+            value="Active"
+            description="Your space is live and accepting members"
             icon={BarChart}
           />
         </div>
-      ) : (
-        <p className="mt-4 text-red-500">Could not load dashboard data.</p>
       )}
 
-      {/* Placeholder for charts */}
+      {/* Recent Activity */}
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Check-In Trends (Placeholder)</CardTitle>
+          <CardTitle>Recent Check-Ins</CardTitle>
         </CardHeader>
-        <CardContent className="h-64 flex items-center justify-center">
-          <p className="text-muted-foreground">[Chart will go here]</p>
+        <CardContent>
+          {checkIns.length > 0 ? (
+            <div className="space-y-3">
+              {checkIns.slice(0, 5).map((checkIn) => (
+                <div key={checkIn.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                  <div>
+                    <p className="font-medium">{checkIn.user?.username || 'Member'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(checkIn.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-sm text-green-600 font-medium">Checked In</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">
+              No recent check-ins. Check-ins will appear here when members visit your space.
+            </p>
+          )}
         </CardContent>
       </Card>
-      
     </PartnerLayout>
   );
 }

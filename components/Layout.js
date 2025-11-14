@@ -2,7 +2,7 @@ import React from 'react';
 import Router from 'next/router';
 import Link from 'next/link';
 // Import our new icons
-import { LayoutDashboard, ScanLine, LogOut } from 'lucide-react';
+import { LayoutDashboard, ScanLine, LogOut, FileText, Building, Settings } from 'lucide-react';
 
 const NavLink = ({ href, children, isActive, icon: Icon }) => (
   <Link href={href} legacyBehavior>
@@ -58,6 +58,28 @@ export default function PartnerLayout({ children, activePage }) {
             icon={ScanLine}
           >
             Scan Member
+          </NavLink>
+          <NavLink 
+            href="/reports" 
+            isActive={activePage === 'reports'} 
+            icon={FileText}
+          >
+            Reports
+          </NavLink>
+          {/* --- NEW LINKS --- */}
+          <NavLink 
+            href="/space" 
+            isActive={activePage === 'space'} 
+            icon={Building}
+          >
+            My Space
+          </NavLink>
+          <NavLink 
+            href="/settings" 
+            isActive={activePage === 'settings'} 
+            icon={Settings}
+          >
+            Settings
           </NavLink>
         </nav>
 

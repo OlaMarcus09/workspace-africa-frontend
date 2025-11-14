@@ -3,7 +3,10 @@ import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import PartnerLayout from '../components/Layout';
-// Import our new components
+// --- NEW IMPORT ---
+import { QrReader } from 'react-qr-reader';
+
+// Import our shadcn components
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,12 +21,12 @@ export default function ScannerPage() {
   const [spaceId, setSpaceId] = useState(null);
   
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
   // 1. Get the Partner's info (we need their space ID)
   useEffect(() => {
     const fetchPartnerInfo = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
         if (!token) Router.push('/');
         
         const response = await axios.get(`${API_URL}/api/users/me/`, {
@@ -41,18 +44,16 @@ export default function ScannerPage() {
       }
     };
     fetchPartnerInfo();
-  }, [API_URL]);
+  }, [API_URL, token]);
 
-  // 2. Handle the validation logic
-  const handleValidate = async (e) => {
-    e.preventDefault();
+  // 2. Main validation function (used by both scanner and form)
+  const validateCode = async (scannedCode) => {
     setLoading(true);
     setValidationResult(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
       const response = await axios.post(`${API_URL}/api/check-in/validate/`, 
-        { code: code, space_id: spaceId },
+        { code: scannedCode, space_id: spaceId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -69,17 +70,38 @@ export default function ScannerPage() {
     }
   };
 
+  // 3. Handle manual form submission
+  const handleManualSubmit = (e) => {
+    e.preventDefault();
+    if (code.length === 6) {
+      validateCode(code);
+    }
+  };
+
+  // 4. Handle QR scan result
+  const handleScanResult = (result, error) => {
+    if (!!result) {
+      const scannedCode = result?.getText();
+      if (scannedCode && !loading) {
+        setCode(scannedCode);
+        validateCode(scannedCode);
+      }
+    }
+    if (!!error) {
+      // console.info(error);
+    }
+  };
+
   return (
     <PartnerLayout activePage="scanner">
       <Head>
         <title>Scan Member | Partner Portal</title>
       </Head>
       
-      {/* Center the content */}
       <div className="flex justify-center">
         <div className="w-full max-w-xl">
 
-          {/* --- The Validation Result Banner --- */}
+          {/* --- Validation Result Banner --- */}
           {validationResult && (
             <Card className={`mb-6 ${
               validationResult.status === 'VALID' 
@@ -112,7 +134,6 @@ export default function ScannerPage() {
                 </div>
               </CardHeader>
               
-              {/* Show user info on success */}
               {validationResult.status === 'VALID' && (
                 <CardContent className="flex items-center space-x-4 pt-4 border-t border-green-200">
                   <Avatar>
@@ -135,18 +156,25 @@ export default function ScannerPage() {
           {/* --- The Scanner Component --- */}
           <Card>
             <CardHeader>
-              <CardTitle>Validate Member</CardTitle>
-              <CardDescription>
-                Align the member's QR code in the frame or enter their 6-digit code.
-              </CardDescription>
+              <CardTitle>Validate Member Check-In</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Camera Placeholder */}
-              <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center mb-6">
-                <p className="text-muted-foreground">(Camera Scanner Placeholder)</p>
+              {/* --- NEW LIVE CAMERA SCANNER --- */}
+              <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center mb-6">
+                <QrReader
+                  onResult={handleScanResult}
+                  constraints={{ facingMode: 'environment' }}
+                  containerStyle={{ width: '100%', height: '100%' }}
+                  videoContainerStyle={{ width: '100%', height: '100%', paddingTop: '0' }}
+                  videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               </div>
               
-              <form onSubmit={handleValidate}>
+              <p className="my-4 text-center text-muted-foreground">
+                or enter the member's 6-digit code
+              </p>
+              
+              <form onSubmit={handleManualSubmit}>
                 <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="code" className="text-center">Member Code</Label>
                   <Input
@@ -161,7 +189,7 @@ export default function ScannerPage() {
                 </div>
                 <Button
                   type="submit"
-                  disabled={loading || !code || !spaceId}
+                  disabled={loading || code.length < 6 || !spaceId}
                   className="w-full h-12 mt-6 text-lg"
                 >
                   {loading ? 'Validating...' : 'Validate Code'}

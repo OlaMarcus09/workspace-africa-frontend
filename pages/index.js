@@ -36,21 +36,19 @@ export default function LoginPage() {
         password,
       });
       
-      access = response.data.access; // Get the token
+      access = response.data.access;
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', response.data.refresh);
 
     } catch (err) {
-      // This block catches "Invalid email or password"
       console.error("Login error:", err);
       setLoading(false);
       setError('Invalid email or password. Please try again.');
-      return; // Stop here
+      return;
     }
 
     try {
       // Step 2: Check if the user is a Partner
-      // We use the 'access' token we just got
       const profileResponse = await axios.get(`${API_URL}/api/users/me/`, {
         headers: { Authorization: `Bearer ${access}` }
       });
@@ -62,9 +60,8 @@ export default function LoginPage() {
         setError('You have a valid account, but you are not a Partner.');
       }
     } catch (err) {
-      // This block catches "Cold Start" or "Profile" errors
       console.error("Profile check error:", err);
-      setError('Could not verify your profile. The server may be waking up. Please try again in 30 seconds.');
+      setError('Could not verify your profile. Please try again.');
     } finally {
       setLoading(false);
     }
