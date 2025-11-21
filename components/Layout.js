@@ -1,103 +1,72 @@
 import React from 'react';
-import Router from 'next/router';
 import Link from 'next/link';
-// Import our new icons
-import { LayoutDashboard, ScanLine, LogOut, FileText, Building, Settings } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { LayoutDashboard, ScanLine, FileBarChart, Settings, LogOut, Building2 } from 'lucide-react';
 
-const NavLink = ({ href, children, isActive, icon: Icon }) => (
+const SidebarItem = ({ href, icon: Icon, label, isActive }) => (
   <Link href={href} legacyBehavior>
-    <a
-      className={`
-        flex items-center px-4 py-3 text-sm font-medium rounded-lg
-        transition-colors
-        ${
-          isActive
-            ? 'bg-primary text-primary-foreground' // Our Deep Teal!
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-        }
-      `}
-    >
-      <Icon className="w-5 h-5 mr-3" />
-      {children}
+    <a className={`flex items-center px-4 py-3 mb-1 transition-colors border-r-2 ${isActive ? 'bg-white/5 border-primary text-white' : 'border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}>
+      <Icon className="w-4 h-4 mr-3" />
+      <span className="font-mono text-xs uppercase tracking-wider">{label}</span>
     </a>
   </Link>
 );
 
-export default function PartnerLayout({ children, activePage }) {
-
-  const handleLogout = () => {
-    localStorage.clear();
-    Router.push('/'); // Go back to the login page
-  };
+export default function PartnerLayout({ children }) {
+  const router = useRouter();
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      {/* --- Sidebar --- */}
-      <div className="flex flex-col w-64 bg-background border-r">
-        {/* Logo Header */}
-        <div className="flex items-center justify-center h-20 border-b">
-          <img 
-            src="https://res.cloudinary.com/dmqjicpcc/image/upload/v1760286253/WorkSpaceAfrica_bgyjhe.png" 
-            alt="Workspace Africa Logo"
-            className="h-10"
-          />
+    <div className="flex min-h-screen bg-background text-slate-300 font-sans">
+      
+      {/* --- SIDEBAR --- */}
+      <aside className="w-64 bg-surface border-r border-white/10 flex-shrink-0 fixed inset-y-0 left-0 z-50">
+        <div className="h-16 flex items-center px-6 border-b border-white/10">
+            <div className="w-8 h-8 bg-primary/10 flex items-center justify-center rounded-sm border border-primary/20 mr-3">
+                <Building2 className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+                <div className="text-[10px] font-mono text-slate-500 uppercase">Portal</div>
+                <div className="text-white font-bold font-mono text-sm">PARTNER_OS</div>
+            </div>
         </div>
-        
-        {/* Main Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          <NavLink 
-            href="/dashboard" 
-            isActive={activePage === 'dashboard'} 
-            icon={LayoutDashboard}
-          >
-            Dashboard
-          </NavLink>
-          <NavLink 
-            href="/scanner" 
-            isActive={activePage === 'scanner'} 
-            icon={ScanLine}
-          >
-            Scan Member
-          </NavLink>
-          <NavLink 
-            href="/reports" 
-            isActive={activePage === 'reports'} 
-            icon={FileText}
-          >
-            Reports
-          </NavLink>
-          {/* --- NEW LINKS --- */}
-          <NavLink 
-            href="/space" 
-            isActive={activePage === 'space'} 
-            icon={Building}
-          >
-            My Space
-          </NavLink>
-          <NavLink 
-            href="/settings" 
-            isActive={activePage === 'settings'} 
-            icon={Settings}
-          >
-            Settings
-          </NavLink>
+
+        <nav className="mt-8">
+            <div className="px-6 mb-2 text-[10px] font-mono text-slate-600 uppercase">Main Menu</div>
+            <SidebarItem href="/dashboard" icon={LayoutDashboard} label="Overview" isActive={router.pathname === '/dashboard'} />
+            <SidebarItem href="/partner/scan" icon={ScanLine} label="Scanner" isActive={router.pathname === '/partner/scan'} />
+            <SidebarItem href="/partner/reports" icon={FileBarChart} label="Reports" isActive={router.pathname === '/partner/reports'} />
+            <SidebarItem href="/partner/settings" icon={Settings} label="Config" isActive={router.pathname === '/partner/settings'} />
         </nav>
 
-        {/* Footer / Logout Button */}
-        <div className="p-4 border-t">
-          <button
-            onClick={handleLogout}
-            className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Log Out
-          </button>
+        <div className="absolute bottom-0 w-full p-4 border-t border-white/10">
+            <button 
+                onClick={() => { localStorage.clear(); router.push('/'); }}
+                className="flex items-center w-full px-4 py-2 text-xs font-mono text-red-400 hover:bg-red-900/10 transition-colors"
+            >
+                <LogOut className="w-4 h-4 mr-3" />
+                DISCONNECT
+            </button>
         </div>
-      </div>
+      </aside>
 
-      {/* --- Main Content Area --- */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        {children}
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 ml-64">
+        <header className="h-16 border-b border-white/10 bg-background/80 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between">
+            <div className="text-[10px] font-mono text-slate-500">
+                STATUS: <span className="text-green-500">ONLINE</span> • LOC: IBADAN_HQ
+            </div>
+            <div className="flex items-center space-x-4">
+                <div className="text-right">
+                    <div className="text-white font-mono text-xs">Olawale Marcus</div>
+                    <div className="text-[10px] text-primary">ADMIN_LEVEL_1</div>
+                </div>
+                <div className="w-8 h-8 bg-slate-800 rounded-sm border border-white/10"></div>
+            </div>
+        </header>
+        
+        <div className="p-8">
+            {children}
+        </div>
       </main>
     </div>
   );

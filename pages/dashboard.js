@@ -3,187 +3,115 @@ import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import PartnerLayout from '../components/Layout';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Users, BarChart, CircleDollarSign, CalendarCheck, Building } from 'lucide-react';
+import { Users, CheckCircle, DollarSign, Activity, ArrowUpRight } from 'lucide-react';
 
-// Helper component for the stat cards
-const StatCard = ({ title, value, icon: Icon, description }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-      <p className="text-xs text-muted-foreground">{description}</p>
-    </CardContent>
-  </Card>
+// Metric Card Component
+const MetricBlock = ({ label, value, sub, icon: Icon, trend }) => (
+  <div className="bg-surface border border-white/10 p-6 relative overflow-hidden group hover:border-primary/50 transition-colors">
+    <div className="flex justify-between items-start mb-4">
+        <div className="p-2 bg-white/5 rounded-sm text-primary">
+            <Icon className="w-5 h-5" />
+        </div>
+        {trend && (
+            <div className="flex items-center text-green-500 text-[10px] font-mono">
+                <ArrowUpRight className="w-3 h-3 mr-1" /> {trend}
+            </div>
+        )}
+    </div>
+    <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">{label}</div>
+    <div className="text-3xl font-mono font-bold text-white mb-1">{value}</div>
+    <div className="text-xs text-slate-600 font-mono">{sub}</div>
+  </div>
 );
 
 export default function PartnerDashboard() {
-  const [user, setUser] = useState(null);
-  const [space, setSpace] = useState(null);
-  const [checkIns, setCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [checkIns, setCheckIns] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          Router.push('/');
-          return;
-        }
-
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        
-        // Get user profile
-        const userResponse = await axios.get(`${API_URL}/api/users/me/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        setUser(userResponse.data);
-
-        // If user has a managed space, get space details
-        if (userResponse.data.managed_space) {
-          try {
-            const spaceResponse = await axios.get(`${API_URL}/api/spaces/${userResponse.data.managed_space}/`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            setSpace(spaceResponse.data);
-          } catch (spaceError) {
-            console.log('Space details not available');
-          }
-        }
-
-        // Try to get recent check-ins for this space
-        try {
-          const checkInsResponse = await axios.get(`${API_URL}/api/check-ins/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          // Filter check-ins for this partner's space
-          const spaceCheckIns = checkInsResponse.data.filter(
-            checkIn => checkIn.space === userResponse.data.managed_space
-          );
-          setCheckIns(spaceCheckIns);
-        } catch (checkInError) {
-          console.log('Check-ins endpoint not available');
-        }
-
-      } catch (err) {
-        if (err.response && err.response.status === 401) {
-          localStorage.clear();
-          Router.push('/');
-        }
-      } finally {
+    // Demo Data Simulation
+    setTimeout(() => {
+        setCheckIns([
+            { id: 1, user: "Tola A.", time: "10:42 AM", status: "ACTIVE" },
+            { id: 2, user: "David K.", time: "09:15 AM", status: "ACTIVE" },
+            { id: 3, user: "Sarah J.", time: "08:30 AM", status: "COMPLETED" },
+        ]);
         setLoading(false);
-      }
-    };
-
-    fetchData();
+    }, 1000);
   }, []);
 
-  // Calculate stats from available data
-  const todayCheckIns = checkIns.filter(checkIn => {
-    const today = new Date().toDateString();
-    const checkInDate = new Date(checkIn.timestamp).toDateString();
-    return today === checkInDate;
-  }).length;
-
-  const monthlyCheckIns = checkIns.filter(checkIn => {
-    const thisMonth = new Date().getMonth();
-    const checkInMonth = new Date(checkIn.timestamp).getMonth();
-    return thisMonth === checkInMonth;
-  }).length;
-
-  const estimatedPayout = monthlyCheckIns * (space?.payout_per_checkin_ngn || 1500);
-
   return (
-    <PartnerLayout activePage="dashboard">
-      <Head>
-        <title>Dashboard | Partner Portal</title>
-      </Head>
-      
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Welcome, {user?.username || 'Partner'}
-          </h1>
-          {space && (
-            <p className="text-muted-foreground mt-2 flex items-center gap-2">
-              <Building className="w-4 h-4" />
-              Managing: {space.name}
-            </p>
-          )}
-        </div>
-        <div className="text-sm text-muted-foreground">
-          {new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </div>
-      </div>
-      
-      {loading ? (
-        <p className="mt-4 text-muted-foreground">Loading dashboard data...</p>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-8">
-          <StatCard
-            title="Today's Check-Ins"
-            value={todayCheckIns}
-            description="Members checked in today"
-            icon={Users}
-          />
-          <StatCard
-            title="Monthly Check-Ins"
-            value={monthlyCheckIns}
-            description="Total check-ins this month"
-            icon={CalendarCheck}
-          />
-          <StatCard
-            title="Est. Monthly Payout"
-            value={`₦${estimatedPayout.toLocaleString()}`}
-            description={`Based on ₦${(space?.payout_per_checkin_ngn || 1500).toLocaleString()} / check-in`}
-            icon={CircleDollarSign}
-          />
-          <StatCard
-            title="Space Status"
-            value="Active"
-            description="Your space is live and accepting members"
-            icon={BarChart}
-          />
-        </div>
-      )}
+    <PartnerLayout>
+      <Head><title>Command Center | Partner Portal</title></Head>
 
-      {/* Recent Activity */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Recent Check-Ins</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {checkIns.length > 0 ? (
-            <div className="space-y-3">
-              {checkIns.slice(0, 5).map((checkIn) => (
-                <div key={checkIn.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                  <div>
-                    <p className="font-medium">{checkIn.user?.username || 'Member'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(checkIn.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-sm text-green-600 font-medium">Checked In</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">
-              No recent check-ins. Check-ins will appear here when members visit your space.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white mb-2">Infrastructure Overview</h1>
+        <p className="text-slate-500 font-mono text-xs">REAL-TIME METRICS FOR [SEB'S HUB]</p>
+      </div>
+
+      {/* --- METRICS GRID --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricBlock label="Today's Traffic" value="24" sub="VISITORS ON SITE" icon={Users} trend="+12%" />
+        <MetricBlock label="Total Check-ins" value="1,204" sub="THIS MONTH" icon={CheckCircle} trend="+5%" />
+        <MetricBlock label="Est. Revenue" value="₦450k" sub="PENDING PAYOUT" icon={DollarSign} trend="+8%" />
+        <MetricBlock label="System Health" value="98%" sub="OPERATIONAL" icon={Activity} />
+      </div>
+
+      {/* --- LIVE FEED --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Recent Check-ins Table */}
+          <div className="lg:col-span-2 bg-surface border border-white/10">
+             <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                <h3 className="text-xs font-mono text-white uppercase font-bold">Live Access Logs</h3>
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+             </div>
+             <div className="p-0">
+                <table className="w-full text-left">
+                    <thead>
+                        <tr className="text-[10px] font-mono text-slate-500 border-b border-white/5 uppercase">
+                            <th className="p-4 font-normal">User_ID</th>
+                            <th className="p-4 font-normal">Timestamp</th>
+                            <th className="p-4 font-normal">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="font-mono text-xs">
+                        {checkIns.map((log) => (
+                            <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                <td className="p-4 text-white font-bold">{log.user}</td>
+                                <td className="p-4 text-slate-400">{log.time}</td>
+                                <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-sm text-[10px] ${log.status === 'ACTIVE' ? 'bg-green-900/20 text-green-400' : 'bg-slate-800 text-slate-400'}`}>
+                                        {log.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+             </div>
+          </div>
+
+          {/* Quick Controls */}
+          <div className="space-y-4">
+             <div className="bg-[#050505] border border-white/10 p-6">
+                <h3 className="text-xs font-mono text-white uppercase font-bold mb-4">Quick Commands</h3>
+                <button onClick={() => Router.push('/partner/scan')} className="w-full py-3 bg-primary text-white font-mono text-xs font-bold mb-3 hover:bg-orange-600 transition-colors uppercase">
+                    Launch Scanner
+                </button>
+                <button className="w-full py-3 bg-transparent border border-slate-700 text-slate-300 font-mono text-xs hover:border-white hover:text-white transition-colors uppercase">
+                    Generate Report
+                </button>
+             </div>
+
+             <div className="bg-blue-900/10 border border-blue-500/20 p-6">
+                <h3 className="text-xs font-mono text-blue-400 uppercase font-bold mb-2">Maintenance Alert</h3>
+                <p className="text-[10px] text-blue-200/70 mb-4">Scheduled downtime for server maintenance on Nov 25, 03:00 AM.</p>
+                <span className="text-[10px] font-mono text-blue-500 underline cursor-pointer">VIEW_DETAILS</span>
+             </div>
+          </div>
+
+      </div>
     </PartnerLayout>
   );
 }
