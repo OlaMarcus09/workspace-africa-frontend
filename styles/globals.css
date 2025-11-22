@@ -1,40 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  /* --- FONTS --- */
   --font-sans: "Plus Jakarta Sans", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
-
-  /* --- COLORS --- */
-  --color-background: #020617; /* Deep Navy */
-  --color-surface: #0f172a;    /* Lighter Navy */
-  --color-primary: #FF5E3A;    /* Sunset Orange */
-  --color-grid: #1e293b;
+  
+  /* Define specific colors for charts/accents that don't change */
+  --color-primary: #FF5E3A; 
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
 }
 
 @layer base {
+  /* --- LIGHT MODE (Financial Paper) --- */
+  :root {
+    --bg-main: #f8fafc;      /* Slate 50 */
+    --bg-surface: #ffffff;   /* White */
+    --bg-input: #f1f5f9;     /* Slate 100 */
+    --text-main: #0f172a;    /* Slate 900 */
+    --text-muted: #64748b;   /* Slate 500 */
+    --border-color: #e2e8f0; /* Slate 200 */
+    --grid-color: #e2e8f0;   /* Light Grid */
+  }
+
+  /* --- DARK MODE (Cyberpunk Terminal) --- */
+  .dark {
+    --bg-main: #020617;      /* Deep Navy */
+    --bg-surface: #0f172a;   /* Lighter Navy */
+    --bg-input: #050505;     /* Near Black */
+    --text-main: #e2e8f0;    /* Slate 200 */
+    --text-muted: #94a3b8;   /* Slate 400 */
+    --border-color: #1e293b; /* Slate 800 */
+    --grid-color: #1e293b;   /* Dark Grid */
+  }
+
   body {
-    background-color: var(--color-background);
-    color: #cbd5e1;
+    background-color: var(--bg-main);
+    color: var(--text-main);
     font-family: var(--font-sans);
+    transition: background-color 0.3s, color 0.3s;
     
-    /* "Command Center" Grid Background */
+    /* Dynamic Grid Background */
     background-image: 
-      linear-gradient(to right, rgba(30, 41, 59, 0.3) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 
   h1, h2, h3, h4 {
     font-family: var(--font-mono);
-    color: white;
     letter-spacing: -0.025em;
   }
 
-  input {
-    background-color: var(--color-surface);
-    border: 1px solid #334155;
-    color: white;
+  /* Theme-aware Inputs */
+  input, select, textarea {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
     padding: 0.75rem;
     font-family: var(--font-mono);
     font-size: 0.875rem;
@@ -43,8 +64,13 @@
     transition: all 0.2s;
   }
 
-  input:focus {
+  input:focus, select:focus, textarea:focus {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 1px var(--color-primary);
   }
+
+  /* Theme-aware Borders & Cards */
+  .border-theme { border-color: var(--border-color); }
+  .bg-theme-surface { background-color: var(--bg-surface); }
+  .text-theme-muted { color: var(--text-muted); }
 }

@@ -1,102 +1,87 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import Router from 'next/router';
 import Head from 'next/head';
-import { ShieldCheck, ArrowRight, Lock } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import { Terminal, ArrowRight, Lock } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function Login() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-  const handleSubmit = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
-    try {
-      // Simulate login delay for UI feel
-      // const response = await axios.post(`${API_URL}/api/auth/token/`, { email, password });
-      
-      // MOCK REDIRECT (Remove in Prod)
-      setTimeout(() => {
-         localStorage.setItem('accessToken', 'mock_token');
-         Router.push('/dashboard');
-      }, 1500);
-
-    } catch (err) {
-      setError('CREDENTIALS_INVALID');
+    setTimeout(() => {
       setLoading(false);
-    }
+      router.push('/dashboard'); // Changed to point to dashboard
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <Head><title>Partner Gateway | Workspace OS</title></Head>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-[var(--bg-main)] transition-colors duration-300">
+      <Head>
+        <title>Nomad Access | Workspace OS</title>
+      </Head>
 
-      {/* Background Decor */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background"></div>
+      {/* --- THEME TOGGLE (Fixed Positioning) --- */}
+      <div className="absolute top-6 right-6 z-[999]">
+        <ThemeToggle />
+      </div>
+
+      {/* --- OS HEADER DECORATION --- */}
+      <div className="absolute top-0 left-0 w-full p-4 border-b border-[var(--border-color)] flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
+        <span>WORKSPACE_AFRICA_OS</span>
+        <span>AUTH_MODULE_V1.0</span>
+      </div>
 
       <div className="w-full max-w-md relative z-10">
         
-        <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mb-4 border border-primary/20">
-                <ShieldCheck className="w-6 h-6" />
+        {/* Terminal Header */}
+        <div className="mb-8">
+            <div className="text-[var(--color-accent)] font-mono text-xs uppercase tracking-widest mb-2">
+                &gt; Initializing Nomad Protocol...
             </div>
-            <h1 className="text-2xl font-bold text-white uppercase tracking-wider">Partner Portal</h1>
-            <p className="text-slate-500 font-mono text-xs mt-2">SECURE INFRASTRUCTURE ACCESS</p>
+            <h1 className="text-3xl font-bold text-[var(--text-main)]">System Login</h1>
         </div>
 
-        <div className="bg-surface/50 backdrop-blur-md border border-white/10 p-8 relative">
-            {/* Decorative Corner */}
-            <div className="absolute top-0 right-0 w-0 h-0 border-t-[20px] border-t-primary border-l-[20px] border-l-transparent"></div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Login Card */}
+        <div className="bg-[var(--bg-surface)] border-l-2 border-l-[var(--color-accent)] border-y border-r border-[var(--border-color)] p-8 shadow-2xl relative">
+            
+            <form onSubmit={handleLogin} className="space-y-6">
                 <div>
-                    <label className="block text-[10px] font-mono text-slate-500 uppercase mb-2">Admin ID</label>
+                    <label className="block text-[10px] font-mono text-[var(--text-muted)] uppercase mb-2">Identifier (Email)</label>
                     <input 
                         type="email" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="admin@space.com"
-                        className="bg-[#050505] focus:bg-surface"
+                        className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] px-4 py-3 font-mono text-sm focus:border-[var(--color-accent)] focus:outline-none transition-colors placeholder:text-[var(--text-muted)]/50"
+                        placeholder="nomad@workspace.africa"
                     />
                 </div>
+
                 <div>
-                    <label className="block text-[10px] font-mono text-slate-500 uppercase mb-2">Passkey</label>
+                    <label className="block text-[10px] font-mono text-[var(--text-muted)] uppercase mb-2">Security Key</label>
                     <input 
                         type="password" 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] px-4 py-3 font-mono text-sm focus:border-[var(--color-accent)] focus:outline-none transition-colors placeholder:text-[var(--text-muted)]/50"
                         placeholder="••••••••••••"
-                        className="bg-[#050505] focus:bg-surface"
                     />
                 </div>
 
-                {error && (
-                    <div className="p-3 bg-red-900/20 border border-red-500/30 text-red-400 text-xs font-mono flex items-center">
-                        <Lock className="w-3 h-3 mr-2" /> {error}
-                    </div>
-                )}
-
                 <button 
-                    type="submit" 
-                    disabled={loading}
-                    className="w-full py-4 bg-primary hover:bg-orange-600 text-white font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center group"
+                    type="submit"
+                    className="w-full py-4 bg-transparent border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-between px-6 group"
                 >
-                    {loading ? 'VERIFYING...' : 'INITIATE_SESSION'}
-                    {!loading && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
+                    <span>{loading ? 'AUTHENTICATING...' : '[ENTER PORTAL]'}</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
             </form>
-        </div>
 
-        <div className="mt-6 text-center">
-             <div className="text-[10px] font-mono text-slate-600">
-                SYSTEM_V2.0.4 | ENCRYPTED CONNECTION
-             </div>
+            <div className="mt-6 pt-6 border-t border-[var(--border-color)] flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
+                <Link href="#" className="hover:text-[var(--text-main)]">FORGOT_KEY?</Link>
+                <Link href="/signup" legacyBehavior>
+                    <a className="hover:text-[var(--text-main)]">CREATE_NEW_ID {'->'}</a>
+                </Link>
+            </div>
         </div>
       </div>
     </div>
