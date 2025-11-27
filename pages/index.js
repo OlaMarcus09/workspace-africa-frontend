@@ -68,7 +68,7 @@ export default function LoginPage() {
                 <ShieldCheck className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] uppercase tracking-wider font-mono">Partner Portal</h1>
-            <p className="text-[var(--text-muted)] font-mono text-xs mt-2">SECURE INFRASTRUCTURE ACCESS</p>
+            <p className="text-[var(--text-muted)] font-mono text-xs mt-2">SECURE INFRASTRUCTURE ACCESS</p><div className="text-center mt-2"><a href="/signup" className="text-[10px] text-[var(--color-primary)] hover:underline">REGISTER NEW NODE</a></div>
         </div>
 
         <div className="bg-[var(--bg-surface)] backdrop-blur-md border border-[var(--border-color)] p-8 relative rounded-sm shadow-xl">
