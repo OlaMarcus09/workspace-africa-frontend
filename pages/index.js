@@ -74,7 +74,6 @@ export default function LoginPage() {
 
             <p className="text-[var(--text-muted)] font-mono text-xs mt-2">SECURE INFRASTRUCTURE ACCESS</p><div className="text-center mt-2"><a href="/signup" className="text-[10px] text-[var(--color-primary)] hover:underline">REGISTER NEW NODE</a></div>
             <p className="text-[var(--text-muted)] font-mono text-xs mt-2 tracking-tighter">SECURE INFRASTRUCTURE ACCESS</p>
->>>>>>> f372544 (fix: resolve security vulnerability and sync partner login logic)
         </div>
 
         <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-8 rounded-sm shadow-xl">
