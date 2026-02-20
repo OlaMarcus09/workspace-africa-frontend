@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Priority: Vercel Backend (matches your Neon SQL reset)
+  // Fixed API URL pointing to your Vercel/Neon stack
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.vercel.app';
 
   const handleSubmit = async (e) => {
@@ -19,36 +19,34 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // 1. Authenticate with Email
+      // 1. Authenticate
       const response = await axios.post(`${API_URL}/api/auth/token/`, { 
         email: email.toLowerCase().trim(), 
         password 
       });
       const { access, refresh } = response.data;
 
-      // 2. Fetch profile to verify role
+      // 2. Role Verification
       const profileRes = await axios.get(`${API_URL}/api/users/me/`, {
         headers: { Authorization: `Bearer ${access}` }
       });
 
       const userData = profileRes.data;
 
-      // 3. Security: Prevent non-partners from entering the portal
       if (userData.user_type !== 'PARTNER' && userData.user_type !== 'ADMIN') {
          throw new Error("UNAUTHORIZED_ROLE");
       }
 
-      // 4. Persistence
+      // 3. Save Session
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
       localStorage.setItem('userRole', userData.user_type);
 
-      // 5. Smart Redirect
-      // If it's a partner, send them to the scan page
+      // 4. Navigate to Partner Portal
       Router.push('/partner/scan');
 
     } catch (err) {
-      console.error("Auth Failure:", err.response?.data || err.message);
+      console.error("Auth Error:", err.response?.data || err.message);
       if (err.message === "UNAUTHORIZED_ROLE") {
           setError('ACCESS_DENIED: PARTNER_ACCOUNT_REQUIRED');
       } else if (err.response?.status === 401) {
@@ -62,7 +60,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[var(--bg-main)]">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-950 text-white">
       <Head><title>Partner Gateway | Workspace OS</title></Head>
 
       <div className="w-full max-w-md">
@@ -70,33 +68,34 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 mb-4 border border-blue-500/20">
                 <ShieldCheck className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold text-[var(--text-main)] uppercase tracking-wider font-mono">Partner Portal</h1>
-
-            <p className="text-[var(--text-muted)] font-mono text-xs mt-2">SECURE INFRASTRUCTURE ACCESS</p><div className="text-center mt-2"><a href="/signup" className="text-[10px] text-[var(--color-primary)] hover:underline">REGISTER NEW NODE</a></div>
-            <p className="text-[var(--text-muted)] font-mono text-xs mt-2 tracking-tighter">SECURE INFRASTRUCTURE ACCESS</p>
+            <h1 className="text-2xl font-bold uppercase tracking-wider font-mono">Partner Portal</h1>
+            <p className="text-slate-400 font-mono text-xs mt-2 tracking-tighter uppercase">Secure Infrastructure Access</p>
+            <div className="mt-2">
+                <a href="/signup" className="text-[10px] text-blue-500 hover:underline font-mono">REGISTER NEW NODE</a>
+            </div>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-8 rounded-sm shadow-xl">
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-sm shadow-2xl">
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                    <label className="block text-[10px] font-mono text-[var(--text-muted)] uppercase mb-2">Admin ID</label>
+                    <label className="block text-[10px] font-mono text-slate-500 uppercase mb-2">Admin ID</label>
                     <input 
                         type="email" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="admin@space.com"
-                        className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] p-3 text-sm font-mono text-[var(--text-main)]"
+                        placeholder="admin@workspace.africa"
+                        className="w-full bg-slate-950 border border-slate-800 p-3 text-sm font-mono text-white focus:border-blue-500 outline-none transition-colors"
                         required
                     />
                 </div>
                 <div>
-                    <label className="block text-[10px] font-mono text-[var(--text-muted)] uppercase mb-2">Passkey</label>
+                    <label className="block text-[10px] font-mono text-slate-500 uppercase mb-2">Passkey</label>
                     <input 
                         type="password" 
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] p-3 text-sm font-mono text-[var(--text-main)]"
+                        className="w-full bg-slate-950 border border-slate-800 p-3 text-sm font-mono text-white focus:border-blue-500 outline-none transition-colors"
                         required
                     />
                 </div>
