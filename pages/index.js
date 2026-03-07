@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../lib/api'; // This now handles the baseURL and headers
 import Router from 'next/router';
 import Head from 'next/head';
 import { ShieldCheck, ArrowRight, Lock } from 'lucide-react';
@@ -10,49 +10,54 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Fixed API URL pointing to your Vercel/Neon stack
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.vercel.app';
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // 1. Authenticate
-      const response = await axios.post(`${API_URL}/api/auth/token/`, { 
+      // 1. Authenticate using the shared api client
+      const response = await api.post('/api/auth/token/', { 
         email: email.toLowerCase().trim(), 
         password 
       });
       const { access, refresh } = response.data;
 
-      // 2. Role Verification
-      const profileRes = await axios.get(`${API_URL}/api/users/me/`, {
+      // 2. Fetch profile to verify role
+      const profileRes = await api.get('/api/users/me/', {
         headers: { Authorization: `Bearer ${access}` }
       });
 
       const userData = profileRes.data;
 
+      // 3. Security: Prevent non-partners from entering the portal
       if (userData.user_type !== 'PARTNER' && userData.user_type !== 'ADMIN') {
          throw new Error("UNAUTHORIZED_ROLE");
       }
 
-      // 3. Save Session
+      // 4. Persistence
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
       localStorage.setItem('userRole', userData.user_type);
 
-      // 4. Navigate to Partner Portal
+      // 5. Smart Redirect
       Router.push('/partner/scan');
 
     } catch (err) {
+      const errorDetail = err.response?.data?.detail;
       console.error("Auth Error:", err.response?.data || err.message);
+
       if (err.message === "UNAUTHORIZED_ROLE") {
-          setError('ACCESS_DENIED: PARTNER_ACCOUNT_REQUIRED');
+        setError('ACCESS_DENIED: PARTNER_ACCOUNT_REQUIRED');
       } else if (err.response?.status === 401) {
-          setError('CREDENTIALS_INVALID: CHECK_PASSKEY');
+        // More specific error handling for the 401 response
+        if (errorDetail === 'No active account found with the given credentials') {
+          setError('LOGIN_FAILED: INVALID_CREDENTIALS_OR_INACTIVE_ACCOUNT');
+        } else {
+          setError(`AUTH_FAILED: ${errorDetail || 'UNAUTHORIZED'}`);
+        }
       } else {
-          setError(`SYSTEM_ERROR: ${err.response?.data?.detail || 'TRY_AGAIN'}`);
+        setError(`SYSTEM_ERROR: ${errorDetail || 'TRY_AGAIN'}`);
       }
     } finally {
       setLoading(false);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../lib/api'; // Switched to the shared API client
 import Router from 'next/router';
 import Head from 'next/head';
 import { ShieldCheck, ArrowRight, AlertCircle } from 'lucide-react';
@@ -13,39 +13,48 @@ export default function PartnerSignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      await axios.post(API_URL + '/api/users/register/', {
-        email,
-        username: spaceName, // Using space name as username for simplicity
+      // 1. Register the new Partner Node
+      // Using the shared api client ensures we hit the Vercel/Neon backend
+      await api.post('/api/users/register/', {
+        email: email.toLowerCase().trim(),
+        username: spaceName, 
         password,
         password2: password,
         user_type: 'PARTNER'
       });
 
-      const response = await axios.post(API_URL + '/api/auth/token/', {
-        email,
+      // 2. Automatically log them in after registration
+      const response = await api.post('/api/auth/token/', {
+        email: email.toLowerCase().trim(),
         password,
       });
 
       const { access, refresh } = response.data;
+      
+      // 3. Persist session
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('userRole', 'PARTNER');
       
+      // 4. Redirect to the fresh dashboard
       Router.push('/dashboard');
 
     } catch (err) {
-      console.error(err);
+      console.error("Registration Error:", err.response?.data || err.message);
+      
+      // Specific error handling for existing users
       if (err.response?.data?.email) {
-        setError('NODE_ALREADY_REGISTERED');
+        setError('NODE_ALREADY_REGISTERED: TRY_LOGIN');
+      } else if (err.response?.data?.username) {
+        setError('SPACE_NAME_TAKEN: CHOOSE_ANOTHER');
       } else {
-        setError('REGISTRATION_FAILED');
+        setError('REGISTRATION_FAILED: CHECK_CONNECTION');
       }
     } finally {
       setLoading(false);
@@ -77,8 +86,8 @@ export default function PartnerSignupPage() {
                         type="text" 
                         value={spaceName}
                         onChange={(e) => setSpaceName(e.target.value)}
-                        placeholder="e.g. The Hub"
-                        className="bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50"
+                        placeholder="e.g. The Hub Ibadan"
+                        className="w-full p-3 bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:border-[var(--color-primary)] outline-none font-mono text-sm"
                         required
                     />
                 </div>
@@ -89,7 +98,7 @@ export default function PartnerSignupPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="partner@workspace.africa"
-                        className="bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50"
+                        className="w-full p-3 bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:border-[var(--color-primary)] outline-none font-mono text-sm"
                         required
                     />
                 </div>
@@ -100,7 +109,7 @@ export default function PartnerSignupPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50"
+                        className="w-full p-3 bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50 focus:border-[var(--color-primary)] outline-none font-mono text-sm"
                         required
                     />
                 </div>
@@ -114,9 +123,9 @@ export default function PartnerSignupPage() {
                 <button 
                     type="submit" 
                     disabled={loading}
-                    className="w-full py-4 bg-[var(--color-primary)] hover:opacity-90 text-white font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center group shadow-lg shadow-[var(--color-primary)]/20"
+                    className="w-full py-4 bg-[var(--color-primary)] hover:opacity-90 text-white font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center group shadow-lg shadow-[var(--color-primary)]/20 disabled:opacity-50"
                 >
-                    {loading ? 'INITIALIZING...' : 'JOIN_NETWORK'}
+                    {loading ? 'INITIALIZING_NODE...' : 'JOIN_NETWORK'}
                     {!loading && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
                 </button>
             </form>
