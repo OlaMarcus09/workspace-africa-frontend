@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import api from '../lib/api'; // Switched from standard axios to your shared client
+import api from '../lib/api'; 
 import Router from 'next/router';
 import Head from 'next/head';
-import PartnerLayout from '../components/Layout';
+import PartnerLayout from '../components/PartnerLayout'; // Make sure this path matches your folder structure
 import { Users, CheckCircle, DollarSign, Activity, ArrowUpRight } from 'lucide-react';
 
-// Metric Card
 const MetricBlock = ({ label, value, sub, icon: Icon, trend }) => (
   <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
     <div className="flex justify-between items-start mb-4">
@@ -26,11 +25,12 @@ const MetricBlock = ({ label, value, sub, icon: Icon, trend }) => (
 
 export default function PartnerDashboard() {
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null); // Added state to hold the real partner data
   const [stats, setStats] = useState({
       today: 0,
       month: 0,
       revenue: 0,
-      health: 'OFFLINE' // Default to offline until handshake
+      health: 'OFFLINE' 
   });
   const [checkIns, setCheckIns] = useState([]);
 
@@ -40,8 +40,13 @@ export default function PartnerDashboard() {
             const token = localStorage.getItem('accessToken');
             if (!token) { Router.push('/'); return; }
 
-            // 1. Fetch Check-ins using the shared API client
-            // This now points to your Vercel/Neon backend automatically
+            // 1. Fetch the actual Partner User Data
+            const userRes = await api.get('/api/users/me/', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(userRes.data);
+
+            // 2. Fetch Check-ins (NOTE: Check your Django urls.py if this still 404s!)
             const response = await api.get('/api/spaces/check-ins/', {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -49,7 +54,6 @@ export default function PartnerDashboard() {
             const realData = response.data || [];
             setCheckIns(realData);
 
-            // 2. Metric Calculations
             const today = new Date().toDateString();
             const todayCount = realData.filter(c => new Date(c.timestamp).toDateString() === today).length;
             const monthCount = realData.length; 
@@ -64,6 +68,7 @@ export default function PartnerDashboard() {
 
         } catch (err) {
             console.error("Dashboard Sync Error:", err.response?.data || err.message);
+            // If the error is 404, it means the URL string above is slightly wrong
             setStats(prev => ({ ...prev, health: 'SYNC_ERROR' }));
         } finally {
             setLoading(false);
@@ -73,8 +78,9 @@ export default function PartnerDashboard() {
     fetchData();
   }, []);
 
+  // Pass the user state directly into the layout so the top bar updates dynamically!
   return (
-    <PartnerLayout>
+    <PartnerLayout activePage="dashboard" user={user}>
       <Head><title>Command Center | Partner Portal</title></Head>
 
       <div className="mb-8">
