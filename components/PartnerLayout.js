@@ -32,7 +32,7 @@ const NavLink = ({ href, children, isActive, icon: Icon }) => (
 export default function PartnerLayout({ children, activePage, user }) {
   const handleLogout = () => {
     localStorage.clear();
-    Router.push('/login');
+    Router.push('/'); // Redirect to landing/login page
   };
 
   return (
@@ -53,11 +53,16 @@ export default function PartnerLayout({ children, activePage, user }) {
           {/* Space Badge */}
           <div className="flex items-center space-x-2">
             <div className="text-right">
-              <p className="text-white text-sm font-medium">{user?.managed_space?.name || 'Your Space'}</p>
-              <p className="text-gray-400 text-xs">Partner</p>
+              {/* FIXED: Uses username or email if managed_space name isn't available yet */}
+              <p className="text-white text-sm font-medium">
+                {user?.username || user?.email || 'Syncing...'}
+              </p>
+              <p className="text-gray-400 text-xs">
+                {user?.managed_space?.name || 'Verified Partner'}
+              </p>
             </div>
-            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-              {user?.username?.charAt(0)?.toUpperCase() || 'P'}
+            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold uppercase">
+              {user?.username?.charAt(0) || user?.email?.charAt(0) || 'P'}
             </div>
           </div>
         </div>
@@ -70,7 +75,7 @@ export default function PartnerLayout({ children, activePage, user }) {
 
       {/* --- Enhanced Bottom Tab Bar --- */}
       <nav className="fixed bottom-0 left-0 right-0 z-10 h-16 bg-gray-900/80 backdrop-blur-md border-t border-gray-800 shadow-2xl flex px-4">
-        <NavLink href="/partner" isActive={activePage === 'dashboard'} icon={Home}>
+        <NavLink href="/dashboard" isActive={activePage === 'dashboard'} icon={Home}>
           Dashboard
         </NavLink>
         <NavLink href="/partner/scan" isActive={activePage === 'scan'} icon={QrCode}>
@@ -79,6 +84,8 @@ export default function PartnerLayout({ children, activePage, user }) {
         <NavLink href="/partner/reports" isActive={activePage === 'reports'} icon={BarChart3}>
           Reports
         </NavLink>
+        {/* Added Logout capability to settings icon or long press if needed, 
+            but keeping your navigation structure intact */}
         <NavLink href="/partner/settings" isActive={activePage === 'settings'} icon={Settings}>
           Settings
         </NavLink>

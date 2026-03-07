@@ -13,8 +13,15 @@ const SidebarItem = ({ href, icon: Icon, label, isActive }) => (
   </Link>
 );
 
-export default function PartnerLayout({ children }) {
+// Added { user } prop here to receive data from the dashboard page
+export default function PartnerLayout({ children, user }) {
   const router = useRouter();
+
+  // Helper to get initials (e.g., "Olawale Marcus" -> "OM")
+  const getInitials = (name) => {
+    if (!name) return "??";
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans transition-colors duration-300">
@@ -65,10 +72,18 @@ export default function PartnerLayout({ children }) {
             </div>
             <div className="flex items-center space-x-4">
                 <div className="text-right">
-                    <div className="font-mono text-xs text-[var(--text-main)]">Olawale Marcus</div>
-                    <div className="text-[10px] text-[var(--color-primary)]">ADMIN_LEVEL_1</div>
+                    {/* FIXED: Dynamic Name replacing Olawale Marcus */}
+                    <div className="font-mono text-xs text-[var(--text-main)] uppercase">
+                        {user ? (user.username || user.email) : 'SYNCING...'}
+                    </div>
+                    <div className="text-[10px] text-[var(--color-primary)]">
+                        {user?.is_staff ? 'ROOT_ADMIN' : 'PARTNER_NODE'}
+                    </div>
                 </div>
-                <div className="w-8 h-8 bg-[var(--bg-surface)] rounded-sm border border-[var(--border-color)] flex items-center justify-center font-mono text-xs text-[var(--text-muted)]">OM</div>
+                {/* FIXED: Dynamic Initials */}
+                <div className="w-8 h-8 bg-[var(--bg-surface)] rounded-sm border border-[var(--border-color)] flex items-center justify-center font-mono text-xs text-[var(--text-muted)] uppercase">
+                    {user ? getInitials(user.username || user.email) : '??'}
+                </div>
             </div>
         </header>
         

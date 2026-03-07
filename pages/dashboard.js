@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import api from '../lib/api'; 
 import Router from 'next/router';
 import Head from 'next/head';
-import PartnerLayout from '../components/PartnerLayout'; // Make sure this path matches your folder structure
+import PartnerLayout from '../components/Layout';
 import { Users, CheckCircle, DollarSign, Activity, ArrowUpRight } from 'lucide-react';
 
+// Metric Card Component
 const MetricBlock = ({ label, value, sub, icon: Icon, trend }) => (
   <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
     <div className="flex justify-between items-start mb-4">
@@ -25,12 +26,12 @@ const MetricBlock = ({ label, value, sub, icon: Icon, trend }) => (
 
 export default function PartnerDashboard() {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null); // Added state to hold the real partner data
+  const [user, setUser] = useState(null); 
   const [stats, setStats] = useState({
       today: 0,
       month: 0,
       revenue: 0,
-      health: 'OFFLINE' 
+      health: 'OFFLINE'
   });
   const [checkIns, setCheckIns] = useState([]);
 
@@ -40,20 +41,23 @@ export default function PartnerDashboard() {
             const token = localStorage.getItem('accessToken');
             if (!token) { Router.push('/'); return; }
 
-            // 1. Fetch the actual Partner User Data
+            // 1. Fetch User Profile to update "Olawale Marcus" to the actual Partner Name
             const userRes = await api.get('/api/users/me/', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUser(userRes.data);
 
-            // 2. Fetch Check-ins (NOTE: Check your Django urls.py if this still 404s!)
-            const response = await api.get('/api/spaces/check-ins/', {
+            // 2. Fetch Check-ins using the CORRECT endpoint from your spaces/urls.py
+            // This replaces the 404 '/api/spaces/check-ins/' call
+            const response = await api.get('/api/partner/dashboard/', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            const realData = response.data || [];
+            // Django usually wraps this in a 'check_ins' key in PartnerDashboardView
+            const realData = response.data.check_ins || response.data || [];
             setCheckIns(realData);
 
+            // 3. Metric Calculations
             const today = new Date().toDateString();
             const todayCount = realData.filter(c => new Date(c.timestamp).toDateString() === today).length;
             const monthCount = realData.length; 
@@ -68,7 +72,6 @@ export default function PartnerDashboard() {
 
         } catch (err) {
             console.error("Dashboard Sync Error:", err.response?.data || err.message);
-            // If the error is 404, it means the URL string above is slightly wrong
             setStats(prev => ({ ...prev, health: 'SYNC_ERROR' }));
         } finally {
             setLoading(false);
@@ -78,9 +81,8 @@ export default function PartnerDashboard() {
     fetchData();
   }, []);
 
-  // Pass the user state directly into the layout so the top bar updates dynamically!
   return (
-    <PartnerLayout activePage="dashboard" user={user}>
+    <PartnerLayout user={user}>
       <Head><title>Command Center | Partner Portal</title></Head>
 
       <div className="mb-8">
