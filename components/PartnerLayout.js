@@ -1,95 +1,109 @@
-import React from 'react';
-import Router from 'next/router';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Home, QrCode, User, BarChart3, Settings, Sparkles, LogOut } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { LayoutDashboard, ScanLine, FileBarChart, Settings, LogOut, Building2 } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
+import api from '../lib/api';
 
-const NavLink = ({ href, children, isActive, icon: Icon }) => (
+const SidebarItem = ({ href, icon: Icon, label, isActive }) => (
   <Link href={href} legacyBehavior>
-    <a className={`
-      flex flex-col items-center justify-center flex-1 py-3
-      transition-all duration-200 relative
-      ${isActive 
-        ? 'text-purple-400 scale-105' 
-        : 'text-gray-500 hover:text-gray-300'
-      }
-    `}>
-      <div className={`relative ${isActive ? 'text-purple-400' : 'text-gray-500'}`}>
-        <Icon className="w-6 h-6" />
-        {isActive && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-        )}
-      </div>
-      <span className="text-xs font-medium mt-1">{children}</span>
-      
-      {/* Active indicator bar */}
-      {isActive && (
-        <div className="absolute top-0 w-full h-0.5 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"></div>
-      )}
+    <a className={`flex items-center px-4 py-3 mb-1 transition-colors border-r-2 ${isActive ? 'bg-[var(--bg-input)] border-[var(--color-primary)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-input)]'}`}>
+      <Icon className="w-4 h-4 mr-3" />
+      <span className="font-mono text-xs uppercase tracking-wider">{label}</span>
     </a>
   </Link>
 );
 
-export default function PartnerLayout({ children, activePage, user }) {
-  const handleLogout = () => {
-    localStorage.clear();
-    Router.push('/'); // Redirect to landing/login page
+export default function PartnerLayout({ children }) {
+  const router = useRouter();
+  const [userData, setUserData] = useState(null);
+
+  // Fallback profile sync if the parent wrapper didn't pass user context down
+  useEffect(() => {
+    const syncProfile = async () => {
+      try {
+        const res = await api.get('/api/users/me/');
+        setUserData(res.data);
+      } catch (err) {
+        console.error("Layout Profile Sync Fail:", err);
+      }
+    };
+    syncProfile();
+  }, [router.pathname]);
+
+  // Helper to get initials (e.g., "Olawale Marcus" -> "OM")
+  const getInitials = (name) => {
+    if (!name) return "??";
+    return name.split(/[\s_@.]+/).map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
-  return (
-    <div className="flex flex-col min-h-screen bg-black">
-      
-      {/* --- Modern Header --- */}
-      <header className="sticky top-0 z-10 w-full py-4 bg-black/80 backdrop-blur-md border-b border-gray-800 shadow-lg">
-        <div className="container flex items-center justify-between px-4 mx-auto max-w-lg">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold">
-              W
-            </div>
-            <span className="font-bold text-lg bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Partner
-            </span>
-          </div>
-          
-          {/* Space Badge */}
-          <div className="flex items-center space-x-2">
-            <div className="text-right">
-              {/* FIXED: Uses username or email if managed_space name isn't available yet */}
-              <p className="text-white text-sm font-medium">
-                {user?.username || user?.email || 'Syncing...'}
-              </p>
-              <p className="text-gray-400 text-xs">
-                {user?.managed_space?.name || 'Verified Partner'}
-              </p>
-            </div>
-            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold uppercase">
-              {user?.username?.charAt(0) || user?.email?.charAt(0) || 'P'}
-            </div>
-          </div>
-        </div>
-      </header>
-      
-      {/* --- Main Content Area --- */}
-      <main className="flex-1 w-full max-w-lg p-4 pb-24 mx-auto overflow-y-auto">
-        {children}
-      </main>
+  const displayName = userData?.username || userData?.email || 'PARTNER';
 
-      {/* --- Enhanced Bottom Tab Bar --- */}
-      <nav className="fixed bottom-0 left-0 right-0 z-10 h-16 bg-gray-900/80 backdrop-blur-md border-t border-gray-800 shadow-2xl flex px-4">
-        <NavLink href="/dashboard" isActive={activePage === 'dashboard'} icon={Home}>
-          Dashboard
-        </NavLink>
-        <NavLink href="/partner/scan" isActive={activePage === 'scan'} icon={QrCode}>
-          Scan
-        </NavLink>
-        <NavLink href="/partner/reports" isActive={activePage === 'reports'} icon={BarChart3}>
-          Reports
-        </NavLink>
-        {/* Added Logout capability to settings icon or long press if needed, 
-            but keeping your navigation structure intact */}
-        <NavLink href="/partner/settings" isActive={activePage === 'settings'} icon={Settings}>
-          Settings
-        </NavLink>
-      </nav>
+  return (
+    <div className="flex min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] font-sans transition-colors duration-300">
+      
+      {/* --- SIDEBAR --- */}
+      <aside className="w-64 bg-[var(--bg-surface)] border-r border-[var(--border-color)] flex-shrink-0 fixed inset-y-0 left-0 z-50 transition-colors duration-300 flex flex-col">
+        <div className="h-16 flex items-center px-6 border-b border-[var(--border-color)] flex-shrink-0">
+            <div className="w-8 h-8 bg-[var(--color-primary)]/10 flex items-center justify-center rounded-sm border border-[var(--color-primary)]/20 mr-3">
+                <Building2 className="w-4 h-4 text-[var(--color-primary)]" />
+            </div>
+            <div>
+                <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase">Portal</div>
+                <div className="font-bold font-mono text-sm tracking-tight">PARTNER_OS</div>
+            </div>
+        </div>
+
+        <nav className="mt-8 flex-1 overflow-y-auto">
+            <div className="px-6 mb-2 text-[10px] font-mono text-[var(--text-muted)] uppercase">Main Menu</div>
+            {/* FIXED: Formatted active conditions to match standard routing parameters */}
+            <SidebarItem href="/dashboard" icon={LayoutDashboard} label="Overview" isActive={router.pathname === '/dashboard'} />
+            <SidebarItem href="/partner/scan" icon={ScanLine} label="Scanner" isActive={router.pathname === '/partner/scan' || router.pathname.includes('/scan')} />
+            <SidebarItem href="/partner/reports" icon={FileBarChart} label="Reports" isActive={router.pathname === '/partner/reports' || router.pathname.includes('/reports')} />
+            <SidebarItem href="/partner/settings" icon={Settings} label="Config" isActive={router.pathname === '/partner/settings' || router.pathname.includes('/settings')} />
+        </nav>
+
+        <div className="p-4 border-t border-[var(--border-color)] space-y-3 flex-shrink-0 bg-[var(--bg-surface)]">
+            <div className="flex items-center justify-between px-2 text-[10px] font-mono text-[var(--text-muted)] uppercase">
+                <span>Theme</span>
+                <ThemeToggle className="w-full ml-2" />
+            </div>
+
+            <button 
+                onClick={() => { localStorage.clear(); router.push('/'); }}
+                className="flex items-center w-full px-4 py-2 text-xs font-mono text-red-400 hover:bg-red-500/10 transition-colors rounded-sm border border-transparent hover:border-red-500/20"
+            >
+                <LogOut className="w-4 h-4 mr-3" />
+                DISCONNECT
+            </button>
+        </div>
+      </aside>
+
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 ml-64 transition-all duration-300">
+        <header className="h-16 border-b border-[var(--border-color)] bg-[var(--bg-main)]/80 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between transition-colors duration-300">
+            <div className="text-[10px] font-mono text-[var(--text-muted)]">
+                STATUS: <span className="text-green-500">ONLINE</span> • LOC: IBADAN_HQ
+            </div>
+            <div className="flex items-center space-x-4">
+                <div className="text-right">
+                    <div className="font-mono text-xs text-[var(--text-main)] uppercase truncate max-w-[150px]">
+                        {displayName}
+                    </div>
+                    <div className="text-[10px] text-[var(--color-primary)] font-mono uppercase">
+                        {userData?.user_type || 'PARTNER_NODE'}
+                    </div>
+                </div>
+                <div className="w-8 h-8 bg-[var(--bg-surface)] rounded-sm border border-[var(--border-color)] flex items-center justify-center font-mono text-xs text-[var(--text-muted)] uppercase">
+                    {getInitials(displayName)}
+                </div>
+            </div>
+        </header>
+        
+        <div className="p-8">
+            {children}
+        </div>
+      </main>
     </div>
   );
 }
