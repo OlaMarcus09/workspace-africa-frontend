@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../lib/api'; // FIXED: Switched to shared API client with interceptor
 import Head from 'next/head';
 import PartnerLayout from '../../components/Layout';
 import { Download } from 'lucide-react';
 
 export default function ReportsPage() {
   const [logs, setLogs] = useState([]);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchLogs = async () => {
         try {
-            const token = localStorage.getItem('accessToken');
-            const res = await axios.get(`${API_URL}/api/spaces/check-ins/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // FIXED: Point to the real backend reporting endpoint from spaces/urls.py
+            const res = await api.get('/api/partner/reports/');
             setLogs(res.data || []);
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error("Reports Fetch Error:", err.response?.data || err.message); 
+        } finally {
+            setLoading(false);
+        }
     };
     fetchLogs();
   }, []);
@@ -43,11 +45,20 @@ export default function ReportsPage() {
             </thead>
             <tbody className="font-mono text-xs">
                 {logs.length === 0 ? (
-                    <tr><td colSpan="3" className="p-8 text-center text-[var(--text-muted)]">NO REVENUE DATA</td></tr>
+                    <tr>
+                        <td colSpan="3" className="p-8 text-center text-[var(--text-muted)]">
+                            {loading ? 'RETRIEVING_LEDGER...' : 'NO REVENUE DATA'}
+                        </td>
+                    </tr>
                 ) : logs.map((tx, i) => (
-                    <tr key={i} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-input)]">
-                        <td className="p-4 text-[var(--text-muted)]">{new Date(tx.timestamp).toLocaleDateString()}</td>
-                        <td className="p-4 text-[var(--text-main)] font-bold">{tx.user}</td>
+                    <tr key={tx.id || i} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-input)]">
+                        <td className="p-4 text-[var(--text-muted)]">
+                            {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : 'N/A'}
+                        </td>
+                        {/* FIXED: Supports both flat strings and nested object username contracts */}
+                        <td className="p-4 text-[var(--text-main)] font-bold">
+                            {typeof tx.user === 'object' ? (tx.user?.username || tx.user?.email) : (tx.user || 'Anonymous')}
+                        </td>
                         <td className="p-4 text-right text-green-500">₦2,500</td>
                     </tr>
                 ))}
