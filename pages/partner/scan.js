@@ -14,14 +14,13 @@ export default function ScannerPage() {
     setResult(null); // Clear previous result before new attempt
     
     try {
-        const token = localStorage.getItem('accessToken');
-        
-        // REAL API CALL - Using the relative path with the shared api client
-        const response = await api.post('/api/check-ins/validate/', 
-            { code: code },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // FIXED: Point to the singular backend path to resolve the 404 contract bug.
+        // Also removed manual header injection since lib/api.js interceptor handles it now.
+        const response = await api.post('/api/check-in/validate/', { 
+            code: code 
+        });
 
+        // Backend contract fields match response perfectly: user_name, plan_name, remaining_days
         setResult({ 
             status: 'success', 
             user: response.data.user_name, 
@@ -33,7 +32,7 @@ export default function ScannerPage() {
         console.error("Scanner Error:", err.response?.data || err.message);
         setResult({ 
             status: 'error', 
-            error_msg: err.response?.data?.detail || 'INVALID OR EXPIRED TOKEN'
+            error_msg: err.response?.data?.error || err.response?.data?.detail || 'INVALID OR EXPIRED TOKEN'
         });
     } finally {
         setScanning(false);
