@@ -67,11 +67,17 @@ export default function SettingsPage() {
       const token = localStorage.getItem('accessToken');
       const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-      // In real app: await axios.patch(`${API_URL}/api/users/me/`, formData)
-      console.log('Updating profile:', formData);
+      // Real network call executing PATCH edits
+      await axios.patch(`${API_URL}/api/users/me/`, {
+        email: formData.email,
+        phone: formData.phone
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
       alert('Profile updated successfully!');
     } catch (error) {
-      alert('Failed to update profile');
+      alert(error.response?.data?.error || 'Failed to update profile');
     }
   };
 
@@ -85,8 +91,14 @@ export default function SettingsPage() {
       const token = localStorage.getItem('accessToken');
       const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-      // In real app: await axios.post(`${API_URL}/api/auth/password/change/`, formData)
-      console.log('Changing password');
+      // Real network call executing password changes
+      await axios.post(`${API_URL}/api/users/change-password/`, {
+        old_password: formData.currentPassword,
+        new_password: formData.newPassword
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
       alert('Password changed successfully!');
       
       setFormData(prev => ({
@@ -96,7 +108,7 @@ export default function SettingsPage() {
         confirmPassword: ''
       }));
     } catch (error) {
-      alert('Failed to change password');
+      alert(error.response?.data?.error || 'Failed to change password');
     }
   };
 
